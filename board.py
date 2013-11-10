@@ -10,16 +10,28 @@ class Board(object):
     
     def __init__(self):
         self.board = list(Board.default)
-        
+    
+    def cleanInput(self, p1, p2):
+        if (isinstance(p1, tuple) and isinstance(p2, tuple)):
+            p1 = p1[0] + p1[1] * Board.ROW_LENGTH
+            p2 = p2[0] + p2[1] * Board.ROW_LENGTH
+
+        elif not (isinstance(p1, int) and isinstance(p2, int)):
+            raise ValueError("Tiles have to be represented as tuples or ints")
+
+        if not self.valid(p1) or not self.valid(p2):
+            print p1, p2
+            raise ValueError("Tiles are not in the board")
+
+        return p1, p2
+
     def cross(self, p1, p2):
-        #glaube ich nicht unbedingt optimal, aber funktioniert
+        p1, p2 = self.cleanInput(p1, p2)
+
         if not self.crossable(p1, p2):
-            return False
+            raise ValueError("The two tiles can't be crossed out")
         self.board[p1] = 0
         self.board[p2] = 0
-        while self.deadlock():
-            self.expand()
-        return True
     
     def won(self):
         for i in self.board:
@@ -35,6 +47,8 @@ class Board(object):
         return True
     
     def crossable(self, p1, p2):
+        p1, p2 = self.cleanInput(p1, p2)
+
         # convenience
         if p1 > p2:
             p1, p2 = p2, p1
@@ -65,10 +79,20 @@ class Board(object):
     def expand(self):
         self.board += [i for i in self.board if i != 0]
 
+    def rows(self):
+        return int(ceil(len(self.board) * 1./ Board.ROW_LENGTH))
+
+    def iterator2D(self):
+        for r in range(self.rows()):
+            for c in range(Board.ROW_LENGTH):
+                if r * Board.ROW_LENGTH + c >= len(self.board):
+                    break
+                yield r, c, self[r][c]
+
     def __getitem__(self, idx):
         """Return the row that can be accessed further"""
         if idx * Board.ROW_LENGTH >= len(self.board):
-            raise IndexError("Row index out of range")
+            raise IndexError("Row index {0} out of range".format(idx))
         return self.board[idx*Board.ROW_LENGTH : (idx+1)*Board.ROW_LENGTH]
 
     def __repr__(self):
@@ -78,3 +102,4 @@ class Board(object):
             res += str(self[i])
             res += '\n'
         return res
+
