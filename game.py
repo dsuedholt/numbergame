@@ -1,3 +1,4 @@
+import pickle
 from board import Board
 from ui import *
 
@@ -14,45 +15,70 @@ class Game(object):
 		return self.board[r][c]
 
 	def start(self):
-		if self.modified:
-			#TODO: show message box to confirm
-			pass
+		if self.modified and not self.ui.confirmLeaveAction():
+			return
 		self.board = Board()
-		self.boardView = BoardScene(self, Board.ROW_LENGTH, self.ui.centralWidget())
+		self.boardView = BoardScene(self, Board.ROW_LENGTH,
+			self.ui.centralWidget())
 		self.ui.centralWidget().setScene(self.boardView)
 
 	def save(self):
-		pass
+		path = str(self.ui.getSavePath())
+		if not path:
+			return
+		if not path.endswith(".nbg"):
+			path += ".nbg"
+		with open(path, 'w') as f:
+			pickle.dump(self.board, f)
+		self.modified = False
 
 	def load(self):
-		pass
+		if self.modified and not self.ui.confirmLeaveAction():
+			return
+		path = self.ui.getOpenPath()
+		board = None
+		try:
+			with open(path, 'r') as f:
+				board = pickle.load(f)
+		except Error:
+			self.ui.statusBar().showMessage(
+					"Unable to load game :(", 3000)
+		if board:
+			self.modified = False
+			self.board = board
+			self.boardView = BoardScene(self, Board.ROW_LENGTH,
+				self.ui.centralWidget())
+			self.ui.centralWidget().setScene(self.boardView)
+
 
 	def exit(self):
-		pass
+		if self.modified and not self.ui.confirmLeaveAction():
+			return
+		self.ui.close()
 
-	def handleClick(self, tileX, tileY):
-		if not (0 <= tileX < Board.ROW_LENGTH and 0 <= tileY < self.board.rows()):
+	def handleClick(self, tileR, tileC):
+		if not (0 <= tileR < self.board.rows() and 0 <= tileC < Board.ROW_LENGTH):
 			return
 
-		if self.board[tileY][tileX] == 0:
+		if self.board.isCrossed(tileR, tileC):
 			self.ui.statusBar().showMessage(
 				"You already crossed this one!", 3000)
 			return
 		if self.selectedTile:
-			if (tileX, tileY) == self.selectedTile:
-				for (r, c, val) in self.board.iterator2D():
-					if val != 0:
-						self.boardView.setTileStatus(c, r, TileItem.NORMAL)
+			if (tileR, tileC) == self.selectedTile:
+				for (r, c) in self.board.iterator2D():
+					if not self.board.isCrossed(r, c):
+						self.boardView.setTileStatus(r, c, TileItem.NORMAL)
 				self.selectedTile = None
 
-			elif self.board.crossable(self.selectedTile, (tileX, tileY)):
-				self.board.cross(self.selectedTile, (tileX, tileY))
-				self.boardView.setTileStatus(tileX, tileY, TileItem.CROSSED)
+			elif self.board.crossable(self.selectedTile, (tileR, tileC)):
+				self.board.cross(self.selectedTile, (tileR, tileC))
+				self.boardView.setTileStatus(tileR, tileC, TileItem.CROSSED)
 				self.boardView.setTileStatus(*self.selectedTile, 
 					status=TileItem.CROSSED)
-				for (r, c, val) in self.board.iterator2D():
-					if val != 0:
-						self.boardView.setTileStatus(c, r, TileItem.NORMAL)
+				for (r, c) in self.board.iterator2D():
+					if not self.board.isCrossed(r, c):
+						self.boardView.setTileStatus(r, c, TileItem.NORMAL)
 				self.selectedTile = None
 				self.modified = True
 				while self.board.deadlock():
@@ -65,14 +91,14 @@ class Game(object):
 					"These two tiles can't be crossed!", 3000)
 
 		else:
-			self.boardView.setTileStatus(tileX, tileY, TileItem.SELECTED)
-			self.selectedTile = (tileX, tileY)
-			for (r, c, val) in self.board.iterator2D():
-				if self.board.crossable(self.selectedTile, (c, r)):
-					self.boardView.setTileStatus(c, r, TileItem.AVAILABLE)
-				elif val != 0 and (c, r) != self.selectedTile:
-					self.boardView.setTileStatus(c, r, TileItem.UNAVAILABLE)
+			self.boardView.setTileStatus(tileR, tileC, TileItem.SELECTED)
+			self.selectedTile = (tileR, tileC)
+			for (r, c) in self.board.iterator2D():
+				if self.board.crossable(self.selectedTile, (r, c)):
+					self.boardView.setTileStatus(r, c, TileItem.AVAILABLE)
+				elif not self.board.isCrossed(r, c) and (r, c) != self.selectedTile:
+					self.boardView.setTileStatus(r, c, TileItem.UNAVAILABLE)
 
 		if self.board.won():
 			self.ui.statusBar().showMessage(
-				"You crossed all the tiles! You win!", 3000)
+				"You crossed all the tiles! Cou win!", 3000)

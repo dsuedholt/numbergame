@@ -8,9 +8,9 @@ class TileItem(QtGui.QGraphicsRectItem):
 	AVAILABLE = 3
 	UNAVAILABLE = 4
 
-	def __init__(self, rect, number, status=NORMAL):
+	def __init__(self, rect, number):
 		super(TileItem, self).__init__(rect)
-		self._status = status
+		self._status = TileItem.NORMAL
 		self._number = number
 		self.setBrush(self.getTileStyle())
 
@@ -67,26 +67,28 @@ class BoardScene(QtGui.QGraphicsScene):
 		self.tiles = []
 		self.expand()
 
-	def setTileStatus(self, x, y, status):
-		tile = self.tiles[x + y*self.row_length]
+	def setTileStatus(self, r, c, status):
+		tile = self.tiles[r*self.row_length + c]
 		tile.setStatus(status)
 		tile.update()
 
 	def expand(self):
 		old_len = len(self.tiles)
-		for (i, j, val) in self.game.board.iterator2D():
-			if j + i*self.row_length < old_len:
+		for (r, c) in self.game.board.iterator2D():
+			if c + r*self.row_length < old_len:
 				continue
-			tile_rect = QtCore.QRectF(j*self.tilewidth, i*self.tilewidth,
+			tile_rect = QtCore.QRectF(c*self.tilewidth, r*self.tilewidth,
 				self.tilewidth, self.tilewidth)
-			tile = TileItem(tile_rect, self.game.getTileAt(i, j))
+			tile = TileItem(tile_rect, self.game.getTileAt(r, c))
+			if self.game.board.isCrossed(r, c):
+				tile.setStatus(TileItem.CROSSED)
 			self.addItem(tile)
 			self.tiles.append(tile)
 
 	def redraw(self):
 		self.tilewidth = (self.parent.width() - 
 			self.parent.verticalScrollBar().width()) / self.row_length
-		for (i, j, val) in self.game.board.iterator2D():
+		for (i, j) in self.game.board.iterator2D():
 			self.tiles[j + i*self.row_length].setRect(
 				j*self.tilewidth, i*self.tilewidth,
 				self.tilewidth, self.tilewidth)
@@ -96,8 +98,8 @@ class BoardScene(QtGui.QGraphicsScene):
 		return self.row_length * (y / self.tilewidth) + (x / self.tilewidth)
 
 	def mousePressEvent(self, e):
-		tileX, tileY = int(e.scenePos().x()), int(e.scenePos().y())
-		self.game.handleClick(tileX / self.tilewidth, tileY / self.tilewidth)
+		tileC, tileR = int(e.scenePos().x()), int(e.scenePos().y())
+		self.game.handleClick(tileR / self.tilewidth, tileC / self.tilewidth)
 
 
 class GameWindow(QtGui.QMainWindow):
@@ -107,10 +109,25 @@ class GameWindow(QtGui.QMainWindow):
 		self.initUI()
 
 	def showHelp(self):
-		print "yay"
+		pass
 
 	def showInfo(self):
 		pass
+
+	def confirmLeaveAction(self):
+		reply = QtGui.QMessageBox.question(self, 'Are you sure?',
+    		"Are you sure?\nUnsaved Progress will be lost.",
+    		QtGui.QMessageBox.Yes | QtGui.QMessageBox.No, QtGui.QMessageBox.No)
+		return reply == QtGui.QMessageBox.Yes
+
+	def getOpenPath(self):
+		return QtGui.QFileDialog.getOpenFileName(self, "Load Game", "/home",
+			"Save files (*.nbg)")
+
+	def getSavePath(self):
+		return QtGui.QFileDialog.getSaveFileName(self, "Save Game", "/home",
+			"Save files (*.nbg)")
+
 
 	def initUI(self):
 		self.setGeometry(500, 400, 500, 300)
@@ -173,3 +190,6 @@ class GameWindow(QtGui.QMainWindow):
 		scene = self.centralWidget().scene()
 		if scene:
 			scene.redraw()
+
+	def closeEvent(self, e):
+		self.game.exit()

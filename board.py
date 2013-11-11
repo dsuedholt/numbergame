@@ -10,11 +10,12 @@ class Board(object):
     
     def __init__(self):
         self.board = list(Board.default)
+        self.crossed = set()
     
     def cleanInput(self, p1, p2):
         if (isinstance(p1, tuple) and isinstance(p2, tuple)):
-            p1 = p1[0] + p1[1] * Board.ROW_LENGTH
-            p2 = p2[0] + p2[1] * Board.ROW_LENGTH
+            p1 = p1[0] * Board.ROW_LENGTH + p1[1]
+            p2 = p2[0] * Board.ROW_LENGTH + p2[1]
 
         elif not (isinstance(p1, int) and isinstance(p2, int)):
             raise ValueError("Tiles have to be represented as tuples or ints")
@@ -30,15 +31,18 @@ class Board(object):
 
         if not self.crossable(p1, p2):
             raise ValueError("The two tiles can't be crossed out")
-        self.board[p1] = 0
-        self.board[p2] = 0
+        self.crossed.add(p1)
+        self.crossed.add(p2)
     
     def won(self):
-        for i in self.board:
-            if i != 0:
+        for i in range(len(self.board)):
+            if i not in self.crossed:
                 return False
         return True
     
+    def isCrossed(self, r, c):
+        return (r * Board.ROW_LENGTH + c) in self.crossed
+
     def deadlock(self):
         for i in range(len(self.board)):
             for j in range(i+1, len(self.board)):
@@ -57,18 +61,19 @@ class Board(object):
             return False
         val1 = self.board[p1]
         val2 = self.board[p2]
-        if (val1 != val2 and val1 + val2 != 10) or val1 == 0:
+        if (val1 != val2 and val1 + val2 != 10) or p1 in self.crossed \
+                                                or p2 in self.crossed:
             return False
 
         vert, horiz = (p2 - p1) % Board.ROW_LENGTH == 0, True
 
         # the values are ok, let's see if they're above...
         for i in range(p1 + Board.ROW_LENGTH, p2, Board.ROW_LENGTH):
-            if self.board[i] != 0:
+            if i not in self.crossed:
                 vert = False
         # ...or next to each other
         for i in range(p1 + 1, p2):
-            if self.board[i] != 0:
+            if i not in self.crossed:
                 horiz = False
         return vert or horiz
 
@@ -77,7 +82,8 @@ class Board(object):
         return 0 <= p < len(self.board)
     
     def expand(self):
-        self.board += [i for i in self.board if i != 0]
+        self.board += [self.board[i] for i in range(len(self.board))
+            if i not in self.crossed]
 
     def rows(self):
         return int(ceil(len(self.board) * 1./ Board.ROW_LENGTH))
@@ -87,7 +93,7 @@ class Board(object):
             for c in range(Board.ROW_LENGTH):
                 if r * Board.ROW_LENGTH + c >= len(self.board):
                     break
-                yield r, c, self[r][c]
+                yield r, c
 
     def __getitem__(self, idx):
         """Return the row that can be accessed further"""
