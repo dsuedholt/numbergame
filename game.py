@@ -57,6 +57,33 @@ class Game(object):
             return
         self.ui.close()
 
+    def showInfo(self):
+        self.ui.showMessage(
+            "This game was written with Python and the PyQt4 library.\n" +
+            "View the source code at the author's github page:\n" + 
+            "\n\thttps://github.com/dsuedholt\n\n" + 
+            "The game itself was not invented by me, but was shown\n" + 
+            "to me by a malicious fellow student aiming to waste my time.",
+            "About this game"
+        )
+
+    def showHelp(self):
+        self.ui.showMessage(
+            "The rules for this game are simple. Your goal is to\n" +
+            "cross out all the numbers. You can cross out any two\n" +
+            "numbers that are equal to another or add up to ten,\n" +
+            "as long as they're directly next to or above each other.\n" +
+            "If only crossed numbers lie between two other numbers,\n" +
+            "they count as adjacent! Crossing over line breaks is also\n" +
+            "allowed. When you can't make any more moves, the game\n" + 
+            "will expand the board by adding every number you didn't\n" +
+            "cross yet to the bottom of the board. Clicking any tile\n" +
+            "will show you the tiles you can cross with the selected one." +
+            "\n\nStart a new game by going to the \"Game\" menu or\n" +
+            "by pressing Ctrl+N.",
+            "How to play"
+        )
+
     def handleClick(self, tileR, tileC):
         if not (0 <= tileR < self.board.rows()
                 and 0 <= tileC < Board.ROW_LENGTH):

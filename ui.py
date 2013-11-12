@@ -111,11 +111,12 @@ class GameWindow(QtGui.QMainWindow):
         self.game = game
         self.initUI()
 
-    def showHelp(self):
-        pass
-
-    def showInfo(self):
-        pass
+    def showMessage(self, text, title):
+        msgBox = QtGui.QMessageBox(self)
+        msgBox.setStyleSheet("background-color: white;")
+        msgBox.setText(text)
+        msgBox.setWindowTitle(title)
+        msgBox.exec_()
 
     def confirmLeaveAction(self):
         reply = QtGui.QMessageBox.question(
@@ -181,12 +182,12 @@ class GameWindow(QtGui.QMainWindow):
         helpAction = QtGui.QAction('&Help', self)
         helpAction.setShortcut('F1')
         helpAction.setStatusTip('How do you play this?')
-        helpAction.triggered.connect(self.showHelp)
+        helpAction.triggered.connect(self.game.showHelp)
 
         aboutAction = QtGui.QAction('&About', self)
         aboutAction.setShortcut('F2')
         aboutAction.setStatusTip('About this game')
-        aboutAction.triggered.connect(self.showInfo)
+        aboutAction.triggered.connect(self.game.showInfo)
 
         infoMenu = menubar.addMenu('&Info')
         infoMenu.addAction(helpAction)
