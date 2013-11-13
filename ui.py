@@ -171,7 +171,7 @@ class GameWindow(QtGui.QMainWindow):
         exitAction = QtGui.QAction('&Exit', self)
         exitAction.setShortcut('Ctrl+Q')
         exitAction.setStatusTip('Exit the Game')
-        exitAction.triggered.connect(self.game.exit)
+        exitAction.triggered.connect(self.close)
 
         gameMenu = menubar.addMenu('&Game')
         gameMenu.addAction(newGameAction)
@@ -201,4 +201,7 @@ class GameWindow(QtGui.QMainWindow):
             scene.redraw()
 
     def closeEvent(self, e):
-        self.game.exit()
+        if self.game.exit():
+            e.accept()
+        else:
+            e.ignore()
