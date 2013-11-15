@@ -53,7 +53,7 @@ class Game(object):
             self.ui.centralWidget().setScene(self.boardView)
 
     def exit(self):
-        return not self.modified or self.ui.confirmLeaveAction():
+        return not self.modified or self.ui.confirmLeaveAction()
 
     def showInfo(self):
         self.ui.showMessage(
