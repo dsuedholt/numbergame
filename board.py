@@ -45,6 +45,8 @@ class Board(object):
         return (r * Board.ROW_LENGTH + c) in self.crossed
 
     def deadlock(self):
+        if self.won():
+            return False
         for i in range(len(self.board)):
             for j in range(i + 1, len(self.board)):
                 if self.crossable(i, j):
